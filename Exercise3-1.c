@@ -90,6 +90,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (my_rank == 0) {
+        MPI_Reduce(local_bin_counts, bin_counts, bin_count, MPI_INT,
+                   MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+    else {
+        MPI_Reduce(local_bin_counts, NULL, bin_count, MPI_INT,
+                   MPI_SUM, 0, MPI_COMM_WORLD);
+    }
+
+    if (my_rank == 0) {
         print_histogram(bin_counts, bin_count, min_meas, max_meas, data_count, my_rank);
         free(data);
         free(bin_counts);
