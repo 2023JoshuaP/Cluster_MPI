@@ -4,58 +4,43 @@
 #include <math.h>
 #include <time.h>
 
-#ifndef M_PI
-#define M_PI 3.14159265358979323846
-#endif
+#define lli long long int
 
 int main(int argc, char* argv[]) {
-    int comm_sz;
-    int my_rank;
-    long long int number_tosses;
-    long long int local_tosses;
-    long long int number_circle = 0;
-    long long int total_circle;
-    double phi_estimate;
-    double coordinate_x, coordinate_y;
-    double distance_squared;
-    int i;
+    int comm_sz, my_rank;
+    lli tosses_process, total_tosses, number_circle_local = 0, circle_total = 0;
+    double coordinate_x, coordinate_y, distance_squared, phi_estimate;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
 
     if (my_rank == 0) {
-        printf("Ingresa el total de lanzamientos de dardos: ");
-        scanf("%lld", &number_tosses);
+        printf("Ingresa el total de lanzamientos: ");
+        fflush(stdout);
+        scanf("%lld", &total_tosses);
     }
 
-    MPI_Bcast(&number_tosses, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
-    local_tosses = number_tosses / comm_sz;
-
+    MPI_Bcast(&total_tosses, 1, MPI_LONG_LONG_INT, 0, MPI_COMM_WORLD);
+    tosses_process = total_tosses / comm_sz;
     srand(time(NULL) + my_rank);
 
-    for (i = 0; i < local_tosses; i++) {
+    for (lli i = 0; i < tosses_process; i++) {
         coordinate_x = (double)rand() / RAND_MAX * 2.0 - 1.0;
         coordinate_y = (double)rand() / RAND_MAX * 2.0 - 1.0;
 
         distance_squared = coordinate_x * coordinate_x + coordinate_y * coordinate_y;
 
-        if (distance_squared <= 1.0) {
-            number_circle++;
+        if (distance_squared <= 1) {
+            number_circle_local++;
         }
     }
 
-    MPI_Reduce(&number_circle, &total_circle, 1, MPI_LONG_LONG_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+    MPI_Reduce(&number_circle_local, &circle_total, 1, MPI_LONG_LONG, MPI_SUM, 0, MPI_COMM_WORLD);
 
     if (my_rank == 0) {
-        phi_estimate = 4.0 * total_circle / ((double) number_tosses);
-        printf("Total de lanzamientos: %lld\n", number_tosses);
-        printf("Procesos utiizados: %d\n", comm_sz);
-        printf("Dardos dentro del circulo: %lld\n", total_circle);
-        printf("Estimacion de phi: %.10f\n", phi_estimate);
-        printf("Valor real de phi: %.10f\n", M_PI);
-        printf("Error absoluto: %.10f\n", fabs(phi_estimate - M_PI));
-        printf("Error relativo: %.6f%%\n", fabs(phi_estimate - M_PI) / M_PI * 100);
+        phi_estimate = 4.0 * circle_total / ((double) total_tosses);
+        printf("Phi estimado: %f\n", phi_estimate);
     }
 
     MPI_Finalize();
