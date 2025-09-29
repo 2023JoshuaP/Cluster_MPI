@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
+#include <time.h>
 
 int find_bind(float value, float min_meas, float max_meas, int bin_count) {
     float bin_width = (max_meas - min_meas) / bin_count;
@@ -38,6 +39,7 @@ int main(int argc, char* argv[]) {
     int local_data_count;
     char hostname[256];
     char *all_hostnames = NULL;
+    double start_time, end_time, elapsed_time;
     
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
@@ -101,10 +103,15 @@ int main(int argc, char* argv[]) {
             bin_counts[i] = 0;
         }
         
-        printf("Enter the data:\n");
+        srand(time(NULL));
+        printf("\nGenerando %d datos aleatorios entre %.2f y %.2f...\n", 
+               data_count, min_meas, max_meas);
         for (int i = 0; i < data_count; i++) {
-            scanf("%f", &data[i]);
+            data[i] = min_meas + ((float)rand() / RAND_MAX) * (max_meas - min_meas);
         }
+        printf("Datos generados exitosamente.\n\n");
+        
+        start_time = MPI_Wtime();
     }
     
     MPI_Bcast(&data_count, 1, MPI_INT, 0, MPI_COMM_WORLD);
@@ -163,10 +170,15 @@ int main(int argc, char* argv[]) {
     }
     
     if (my_rank == 0) {
+        end_time = MPI_Wtime();
+        elapsed_time = end_time - start_time;
+
         print_histogram(bin_counts, bin_count, min_meas, max_meas, data_count, my_rank);
         printf("Datos distribuidos entre %d procesos\n", comm_sz);
         printf("Procesamiento paralelo completado\n");
         printf("Resultados consolidados exitosamente\n");
+        printf("Tiempo de ejecución: %.6f segundos\n", elapsed_time);
+        printf("Tiempo de ejecución: %.3f milisegundos\n", elapsed_time * 1000);
         
         free(data);
         free(bin_counts);
