@@ -10,10 +10,16 @@ int main(int argc, char* argv[]) {
     int message = 42;
     double cpu_time, start_mpi, end_mpi, mpi_time;
     clock_t start, end;
+    char processor_name[MPI_MAX_PROCESSOR_NAME];
+    int name_len;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &my_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &comm_sz);
+    MPI_Get_processor_name(processor_name, &name_len);
+
+    printf("Proceso %d ejecutándose en máquina: %s\n", my_rank, processor_name);
+    fflush(stdout);
 
     if (comm_sz != 2) {
         if (my_rank == 0) {
@@ -23,9 +29,10 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    printf("Proceso %d inicia.\n", my_rank);
+    MPI_Barrier(MPI_COMM_WORLD);
 
     if (my_rank == 0) {
+        printf("Proceso 0 (máquina %s) <-> Proceso 1 (enviando datos...)\n", processor_name);
         printf("Medicion con clock()\n");
     }
 
@@ -135,6 +142,9 @@ int main(int argc, char* argv[]) {
         printf("Resoluciones: clock(): 1/%ld = %e seg.\n", CLOCKS_PER_SEC, 1.0 / CLOCKS_PER_SEC);
         printf("MPI_Wtime(): %e seg.\n", MPI_Wtick());
     }
+
+    printf("Proceso %d (máquina %s) finalizando...\n", my_rank, processor_name);
+    fflush(stdout);
 
     MPI_Finalize();
     return 0;
