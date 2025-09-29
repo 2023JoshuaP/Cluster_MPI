@@ -6,7 +6,7 @@
 
 int main(int argc, char* argv[]) {
     int my_rank, comm_sz;
-    int iterations = 1000;
+    int iterations = 500;
     int message = 42;
     double cpu_time, start_mpi, end_mpi, mpi_time;
     clock_t start, end;
